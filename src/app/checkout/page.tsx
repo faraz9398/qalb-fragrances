@@ -13,7 +13,7 @@ import RazorpayCheckout from "@/components/RazorpayCheckout";
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getSubtotal, clearCart } = useCart();
-  const { step, setStep, shipping, setShipping, setOrderId } = useCheckout();
+  const { step, setStep, shipping, setShipping, setOrderId, setOrderItems, setPaymentMethod } = useCheckout();
   const [processing, setProcessing] = useState(false);
 
   const subtotal = getSubtotal();
@@ -57,11 +57,15 @@ export default function CheckoutPage() {
       });
       const data = await res.json();
       setOrderId(data.orderId || `QALB-${Date.now().toString(36).toUpperCase()}`);
+      setOrderItems(items.map((i) => ({ product: { name: i.product.name, price: i.product.price, salePrice: i.product.salePrice }, quantity: i.quantity })));
+      setPaymentMethod("cod");
       clearCart();
       setStep(3);
       router.push("/order-confirmation");
     } catch {
       setOrderId(`QALB-${Date.now().toString(36).toUpperCase()}`);
+      setOrderItems(items.map((i) => ({ product: { name: i.product.name, price: i.product.price, salePrice: i.product.salePrice }, quantity: i.quantity })));
+      setPaymentMethod("cod");
       clearCart();
       setStep(3);
       router.push("/order-confirmation");
@@ -233,8 +237,8 @@ export default function CheckoutPage() {
 
                 <RazorpayCheckout
                   amount={total}
-                  onSuccess={() => {}}
-                  onError={() => {}}
+                  onSuccess={() => router.push("/order-confirmation")}
+                  onError={() => setStep(2)}
                 />
 
                 <div className="flex gap-3 mt-4">

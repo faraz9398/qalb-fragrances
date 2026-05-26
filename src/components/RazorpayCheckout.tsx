@@ -22,7 +22,7 @@ interface RazorpayCheckoutProps {
 export default function RazorpayCheckout({ amount, onSuccess, onError }: RazorpayCheckoutProps) {
   const [loading, setLoading] = useState(false);
   const { items, getSubtotal, clearCart } = useCart();
-  const { shipping, setOrderId, setStep } = useCheckout();
+  const { shipping, setOrderId, setStep, setOrderItems, setPaymentMethod } = useCheckout();
   const { showToast } = useToast();
 
   const hasKeys = !!(env.RAZORPAY_KEY_ID);
@@ -58,7 +58,7 @@ export default function RazorpayCheckout({ amount, onSuccess, onError }: Razorpa
           });
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
-            await fetch("/api/orders", {
+            const orderRes = await fetch("/api/orders", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -75,7 +75,10 @@ export default function RazorpayCheckout({ amount, onSuccess, onError }: Razorpa
                 paymentId: response.razorpay_payment_id,
               }),
             });
-            setOrderId(`QALB-${Date.now().toString(36).toUpperCase()}`);
+            const orderData = await orderRes.json();
+            setOrderId(orderData.orderId);
+            setOrderItems(items.map((i) => ({ product: { name: i.product.name, price: i.product.price, salePrice: i.product.salePrice }, quantity: i.quantity })));
+            setPaymentMethod("razorpay");
             clearCart();
             setStep(3);
             onSuccess(response.razorpay_payment_id);
