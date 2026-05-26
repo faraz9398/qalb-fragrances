@@ -1,22 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ShoppingBag, ChevronLeft, Check } from "lucide-react";
-import { products } from "@/data/products";
+import { getProductBySlug, getAllProducts } from "@/lib/products";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
+import { Product } from "@/types";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const { addItem } = useCart();
   const { showToast } = useToast();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [related, setRelated] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  const product = products.find((p) => p.slug === params.id);
+  useEffect(() => {
+    async function load() {
+      const p = await getProductBySlug(params.id as string);
+      setProduct(p);
+      if (p) {
+        const all = await getAllProducts();
+        setRelated(all.filter((r) => r.category === p.category && r.slug !== p.slug));
+      }
+      setLoading(false);
+    }
+    load();
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-qalb-cream">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="animate-pulse space-y-6">
+            <div className="h-4 bg-qalb-black/5 rounded w-24" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="aspect-[4/5] bg-qalb-black/5 rounded-lg" />
+              <div className="space-y-4">
+                <div className="h-4 bg-qalb-black/5 rounded w-16" />
+                <div className="h-8 bg-qalb-black/5 rounded w-3/4" />
+                <div className="h-4 bg-qalb-black/5 rounded w-1/4" />
+                <div className="h-6 bg-qalb-black/5 rounded w-1/3" />
+                <div className="h-20 bg-qalb-black/5 rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -174,11 +211,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {(() => {
-          const related = products.filter(
-            (p) => p.category === product.category && p.id !== product.id
-          );
-          if (related.length === 0) return null;
+        {related.length > 0 && (() => {
           return (
             <section className="mt-12 sm:mt-16 pt-8 sm:pt-12 border-t border-qalb-black/10">
               <div className="text-center mb-6 sm:mb-8">

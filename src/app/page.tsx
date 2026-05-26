@@ -3,9 +3,10 @@ import Image from "next/image";
 import HeroSection from "@/components/HeroSection";
 import ProductGrid from "@/components/ProductGrid";
 import NewsletterSection from "@/components/NewsletterSection";
-import { products } from "@/data/products";
+import { getAllProducts } from "@/lib/products";
 
-export default function Home() {
+export default async function Home() {
+  const products = await getAllProducts();
   const featuredProducts = products.filter((p) => p.featured);
   const allProducts = products;
 

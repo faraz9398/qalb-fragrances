@@ -32,11 +32,18 @@ export default function AdminOrdersPage() {
     return false;
   });
 
-  const handleLogin = () => {
-    if (password === "qalb2024") {
-      sessionStorage.setItem("qalb-admin", "authed");
-      setAuthed(true);
-    }
+  const handleLogin = async () => {
+    try {
+      const res = await fetch("/api/verify-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        sessionStorage.setItem("qalb-admin", "authed");
+        setAuthed(true);
+      }
+    } catch {}
   };
 
   useEffect(() => {

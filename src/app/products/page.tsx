@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { SlidersHorizontal, Search, X } from "lucide-react";
 import ProductGrid from "@/components/ProductGrid";
 import FilterSidebar from "@/components/FilterSidebar";
-import { products, categories } from "@/data/products";
+import { getAllProducts, getCategories } from "@/lib/products";
 import { Product } from "@/types";
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const [filterOpen, setFilterOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -15,7 +18,15 @@ export default function ProductsPage() {
   const [sort, setSort] = useState("featured");
   const [search, setSearch] = useState("");
 
-  const maxPrice = Math.max(...products.map((p) => p.price));
+  useEffect(() => {
+    getAllProducts().then((data) => {
+      setProducts(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const categories = useMemo(() => getCategories(products), [products]);
+  const maxPrice = products.length > 0 ? Math.max(...products.map((p) => p.price)) : 4000;
 
   const filtered = useMemo(() => {
     let result: Product[] = [...products];
@@ -71,6 +82,31 @@ export default function ProductsPage() {
 
   const hasActiveFilters =
     selectedCategory !== "All" || inStockOnly || priceRange[1] < maxPrice || sort !== "featured" || search;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-qalb-cream">
+        <div className="bg-qalb-black py-8 sm:py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 className="font-heading text-2xl sm:text-3xl lg:text-4xl text-qalb-cream">Our Collection</h1>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {[1,2,3,4,5,6,7,8].map((i) => (
+              <div key={i} className="bg-white rounded-lg overflow-hidden shadow-sm animate-pulse">
+                <div className="aspect-[4/5] bg-qalb-black/5" />
+                <div className="p-3 sm:p-4 space-y-2">
+                  <div className="h-4 bg-qalb-black/5 rounded w-3/4" />
+                  <div className="h-3 bg-qalb-black/5 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-qalb-cream">
