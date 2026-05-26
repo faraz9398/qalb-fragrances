@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Package, Mail, Phone, MapPin, ChevronDown } from "lucide-react";
+import { Package, Mail, Phone, MapPin, ChevronDown, Loader2 } from "lucide-react";
 
 interface Order {
   id: string;
@@ -16,14 +16,41 @@ interface Order {
   items: { product: { name: string }; quantity: number }[];
   subtotal: number;
   total: number;
+  payment_method?: string;
+  payment_id?: string;
   status: string;
   created_at: string;
 }
+
+const statusColors: Record<string, string> = {
+  pending: "bg-amber-50 text-amber-600 border-amber-200",
+  processing: "bg-blue-50 text-blue-600 border-blue-200",
+  shipped: "bg-purple-50 text-purple-600 border-purple-200",
+  delivered: "bg-green-50 text-green-600 border-green-200",
+  cancelled: "bg-red-50 text-red-600 border-red-200",
+};
+
+const statusDots: Record<string, string> = {
+  pending: "bg-amber-400",
+  processing: "bg-blue-400",
+  shipped: "bg-purple-400",
+  delivered: "bg-green-400",
+  cancelled: "bg-red-400",
+};
+
+const nextStatuses: Record<string, string[]> = {
+  pending: ["processing", "cancelled"],
+  processing: ["shipped", "cancelled"],
+  shipped: ["delivered", "cancelled"],
+  delivered: [],
+  cancelled: [],
+};
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [authed, setAuthed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -46,12 +73,33 @@ export default function AdminOrdersPage() {
     } catch {}
   };
 
-  useEffect(() => {
-    if (!authed) return;
+  const fetchOrders = () => {
+    setLoading(true);
     fetch("/api/orders")
       .then((r) => r.json())
       .then((data) => setOrders(data.orders || []))
       .finally(() => setLoading(false));
+  };
+
+  const updateStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingId(orderId);
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      fetchOrders();
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!authed) return;
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 30000);
+    return () => clearInterval(interval);
   }, [authed]);
 
   if (!authed) {
@@ -89,15 +137,23 @@ export default function AdminOrdersPage() {
               {loading ? "Loading..." : `${orders.length} order${orders.length !== 1 ? "s" : ""}`}
             </p>
           </div>
-          <button
-            onClick={() => {
-              sessionStorage.removeItem("qalb-admin");
-              setAuthed(false);
-            }}
-            className="text-xs text-qalb-black/40 hover:text-red-500 transition-colors"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchOrders}
+              className="text-xs text-qalb-black/40 hover:text-qalb-gold transition-colors"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                sessionStorage.removeItem("qalb-admin");
+                setAuthed(false);
+              }}
+              className="text-xs text-qalb-black/40 hover:text-red-500 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -110,6 +166,7 @@ export default function AdminOrdersPage() {
           <div className="text-center py-16">
             <Package size={40} className="mx-auto text-qalb-black/20 mb-3" />
             <p className="text-qalb-black/40">No orders yet</p>
+            <p className="text-xs text-qalb-black/30 mt-1">Orders will appear here after customers check out</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -120,21 +177,16 @@ export default function AdminOrdersPage() {
                   className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-qalb-black/[0.02] transition-colors"
                 >
                   <div className="flex items-center gap-3 sm:gap-4">
-                    <div className={`w-2 h-2 rounded-full ${
-                      order.status === "pending" ? "bg-amber-400" :
-                      order.status === "shipped" ? "bg-blue-400" : "bg-green-400"
-                    }`} />
+                    <div className={`w-2 h-2 rounded-full ${statusDots[order.status] || "bg-gray-400"}`} />
                     <div>
                       <p className="font-mono text-xs sm:text-sm text-qalb-black/70">{order.order_reference}</p>
                       <p className="text-sm sm:text-base font-medium text-qalb-black mt-0.5">{order.customer_name}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 sm:gap-4">
+                    <span className="text-xs text-qalb-black/40">{order.payment_method === "razorpay" ? "Online" : "COD"}</span>
                     <span className="text-sm font-semibold text-qalb-black/70">₹{order.total.toLocaleString()}</span>
-                    <span className={`text-[10px] sm:text-xs uppercase tracking-wider px-2 py-1 rounded ${
-                      order.status === "pending" ? "bg-amber-50 text-amber-600" :
-                      order.status === "shipped" ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"
-                    }`}>
+                    <span className={`text-[10px] sm:text-xs uppercase tracking-wider px-2 py-1 rounded border ${statusColors[order.status] || "bg-gray-50 text-gray-600"}`}>
                       {order.status}
                     </span>
                     <ChevronDown size={16} className={`text-qalb-black/30 transition-transform ${expandedId === order.id ? "rotate-180" : ""}`} />
@@ -157,6 +209,11 @@ export default function AdminOrdersPage() {
                       <MapPin size={14} className="mt-0.5" />
                       <span>{order.shipping_address}, {order.shipping_city}, {order.shipping_state} {order.shipping_zip}</span>
                     </div>
+                    {order.payment_id && (
+                      <p className="text-xs text-qalb-black/40">
+                        Payment ID: {order.payment_id}
+                      </p>
+                    )}
                     <div className="border-t border-qalb-black/5 pt-3 mt-3">
                       <p className="text-xs text-qalb-black/40 uppercase tracking-wider mb-2">Items</p>
                       {order.items.map((item: { product: { name: string }; quantity: number }, i: number) => (
@@ -166,6 +223,34 @@ export default function AdminOrdersPage() {
                         </div>
                       ))}
                     </div>
+
+                    <div className="border-t border-qalb-black/5 pt-3 mt-3">
+                      <p className="text-xs text-qalb-black/40 uppercase tracking-wider mb-2">Update Status</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {(nextStatuses[order.status] || []).map((nextStatus) => (
+                          <button
+                            key={nextStatus}
+                            onClick={() => updateStatus(order.id, nextStatus)}
+                            disabled={updatingId === order.id}
+                            className={`px-3 py-1.5 text-xs uppercase tracking-wider rounded-md border transition-all disabled:opacity-50 ${
+                              nextStatus === "cancelled"
+                                ? "border-red-200 text-red-600 hover:bg-red-50"
+                                : "border-qalb-black/10 text-qalb-black/60 hover:bg-qalb-black/5"
+                            }`}
+                          >
+                            {updatingId === order.id ? (
+                              <Loader2 size={12} className="animate-spin" />
+                            ) : (
+                              `Mark ${nextStatus}`
+                            )}
+                          </button>
+                        ))}
+                        {nextStatuses[order.status]?.length === 0 && (
+                          <span className="text-xs text-qalb-black/30">Order complete</span>
+                        )}
+                      </div>
+                    </div>
+
                     <p className="text-xs text-qalb-black/30 pt-2">
                       {new Date(order.created_at).toLocaleString()}
                     </p>
