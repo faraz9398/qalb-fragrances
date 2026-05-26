@@ -88,6 +88,10 @@ NEXT_PUBLIC_SANITY_DATASET=production
 NEXT_PUBLIC_SUPABASE_URL=<set on Vercel>
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<set on Vercel>
 NEXT_PUBLIC_SITE_URL=https://qalb-fragrances.vercel.app
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_...       (optional, COD if missing)
+RAZORPAY_KEY_SECRET=...                        (optional, COD if missing)
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-...             (optional)
+ADMIN_PASSWORD=qalb2024                         (default fallback)
 ```
 
 ## 5. Sanity CMS
