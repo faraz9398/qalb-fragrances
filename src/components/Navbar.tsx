@@ -38,6 +38,12 @@ export default function Navbar() {
               Shop
             </Link>
             <Link
+              href="/contact"
+              className="text-sm tracking-wider text-qalb-cream/70 hover:text-qalb-gold transition-colors uppercase"
+            >
+              Contact
+            </Link>
+            <Link
               href="/cart"
               className="relative text-qalb-cream/70 hover:text-qalb-gold transition-colors"
             >
@@ -86,6 +92,13 @@ export default function Navbar() {
               className="block text-sm tracking-wider text-qalb-cream/70 hover:text-qalb-gold transition-colors uppercase py-2"
             >
               Shop
+            </Link>
+            <Link
+              href="/contact"
+              onClick={() => setIsOpen(false)}
+              className="block text-sm tracking-wider text-qalb-cream/70 hover:text-qalb-gold transition-colors uppercase py-2"
+            >
+              Contact
             </Link>
           </div>
         </div>

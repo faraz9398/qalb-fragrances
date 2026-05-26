@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Check, CreditCard, Truck, Package } from "lu
 import { useCart } from "@/context/CartContext";
 import { useCheckout } from "@/context/CheckoutContext";
 import { ShippingInfo } from "@/types";
+import RazorpayCheckout from "@/components/RazorpayCheckout";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -221,37 +222,28 @@ export default function CheckoutPage() {
                       <p className="text-xs text-qalb-black/40">Pay when you receive your order</p>
                     </div>
                   </label>
+                  <button
+                    onClick={handlePlaceOrder}
+                    disabled={processing}
+                    className="mt-3 w-full py-3 bg-qalb-black text-qalb-cream text-sm tracking-wider uppercase rounded-md hover:bg-qalb-gold hover:text-qalb-black transition-all duration-300 disabled:opacity-60"
+                  >
+                    {processing ? "Processing..." : `Place Order • ₹${total.toLocaleString()}`}
+                  </button>
                 </div>
 
-                <div className="border border-qalb-black/10 rounded-md p-4 mb-4 opacity-50">
-                  <label className="flex items-center gap-3 cursor-not-allowed">
-                    <input
-                      type="radio"
-                      name="payment"
-                      disabled
-                      className="accent-qalb-gold"
-                    />
-                    <div>
-                      <span className="text-sm font-medium text-qalb-black/60">Online Payment</span>
-                      <p className="text-xs text-qalb-black/30">Coming soon</p>
-                    </div>
-                  </label>
-                </div>
+                <RazorpayCheckout
+                  amount={total}
+                  onSuccess={() => {}}
+                  onError={() => {}}
+                />
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 mt-4">
                   <button
                     onClick={() => setStep(1)}
                     className="flex-1 flex items-center justify-center gap-2 py-3.5 border border-qalb-black/10 text-qalb-black/60 text-sm tracking-wider uppercase rounded-md hover:border-qalb-black/30 transition-all"
                   >
                     <ChevronLeft size={16} />
                     Back
-                  </button>
-                  <button
-                    onClick={handlePlaceOrder}
-                    disabled={processing}
-                    className="flex-[2] flex items-center justify-center gap-2 py-3.5 bg-qalb-black text-qalb-cream text-sm tracking-wider uppercase font-semibold rounded-md hover:bg-qalb-gold hover:text-qalb-black transition-all duration-300 disabled:opacity-60"
-                  >
-                    {processing ? "Processing..." : `Place Order • ₹${total.toLocaleString()}`}
                   </button>
                 </div>
               </div>
